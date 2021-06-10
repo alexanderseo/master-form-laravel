@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class AuthController extends Controller {
 
@@ -13,6 +14,7 @@ class AuthController extends Controller {
     }
 
     public function register() {
+
         User::create([
             'name' => request('name'),
             'email' => request('email'),
@@ -22,8 +24,8 @@ class AuthController extends Controller {
         return response()->json(['status' => 201]);
     }
 
-    public function login()
-    {
+    public function login() {
+
         $client = DB::table('oauth_clients')
             ->where('password_client', true)
             ->first();
@@ -39,5 +41,19 @@ class AuthController extends Controller {
         $request = Request::create('/oauth/token', 'POST', $data);
 
         return app()->handle($request);
+    }
+
+    public function logout() {
+        $accessToken = auth()->user()->token();
+
+        $refreshToken = DB::table('oauth_refresh_tokens')
+            ->where('access_token_id', $accessToken->id)
+            ->update([
+                'revoked' => true
+            ]);
+
+        $accessToken->revoke();
+
+        return response()->json(['status' => 200]);
     }
 }
